@@ -7,9 +7,14 @@ before_install:
 
 script: elm-make --yes src/Main.elm
 
+before_deploy:
+  - "mkdir pages"
+  - "cp index.html pages"
+
 deploy:
   provider: pages
   skip_cleanup: true
   github_token: $GITHUB_TOKEN
+  local_dir: pages
   on:
     branch: master
