@@ -1,11 +1,13 @@
-module ObaRequest exposing (getStops,parseLocResponse)
+module ObaRequest exposing (getStops, parseLocResponse)
 
 import Http
 import Geolocation exposing (Location)
-import ObaParser exposing (..)
 import Dict
 import Json.Decode as Decode
-import Debug
+import Stop exposing (..)
+import Route exposing (..)
+import Agency exposing (..)
+import Models exposing (..)
 
 
 corsProxy : String
@@ -41,28 +43,54 @@ getStops loc msg =
         Http.getString reqUrl
             |> Http.send msg
 
-parseLocResponse : String -> Result String StopDict
-parseLocResponse resp =
-  let
-    agencies = (Decode.list agencyDecoder
-               |> Decode.at ["data","references","agencies"]
-               |> Decode.decodeString) resp
-               |> resultListToDict
-    routes = (Decode.list routeDecoder
-               |> Decode.at ["data","references","routes"]
-               |> Decode.decodeString) resp
-               |> Result.map (populateAgency agencies)
-               |> resultListToDict
 
-  in
-    Decode.decodeString (Decode.at ["data","list"] (Decode.list stopDecoder)) resp
-    |> Result.map (populateRoutes routes)
-    |> resultListToDict
+parseLocResponse : String -> Model -> ObaData
+parseLocResponse resp model =
+    let
+        agencies =
+            (Decode.list agencyDecoder
+                |> Decode.at [ "data", "references", "agencies" ]
+                |> Decode.decodeString
+            )
+                resp
+                |> Result.withDefault []
+                |> List.map (\n -> ( n.id, n ))
+                |> Dict.fromList
+                |> Dict.union model.data.agencies
 
-resultListToDict
-  : Result x (List { a | id : comparable })
-  -> Result x (Dict.Dict comparable { a | id : comparable })
+        routes =
+            (Decode.list routeDecoder
+                |> Decode.at [ "data", "references", "routes" ]
+                |> Decode.decodeString
+            )
+                resp
+                |> Result.withDefault []
+                |> List.map (populateAgency agencies)
+                |> List.map (\n -> ( n.id, n ))
+                |> Dict.fromList
+                |> Dict.union model.data.routes
+
+        stops =
+            Decode.decodeString
+                (Decode.at [ "data", "list" ]
+                    (Decode.list stopDecoder)
+                )
+                resp
+                |> Result.withDefault []
+                |> List.map (populateRoutes routes)
+                |> List.map (\n -> ( n.id, n ))
+                |> Dict.fromList
+
+        orig_data =
+            model.data
+    in
+        { orig_data | stops = stops, agencies = agencies, routes = routes }
+
+
+resultListToDict :
+    Result x (List { a | id : comparable })
+    -> Result x (Dict.Dict comparable { a | id : comparable })
 resultListToDict reslist =
-  reslist
-  |> Result.map (List.map (\n -> (n.id, n)))
-  |> Result.map Dict.fromList
+    reslist
+        |> Result.map (List.map (\n -> ( n.id, n )))
+        |> Result.map Dict.fromList
