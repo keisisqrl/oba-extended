@@ -5,6 +5,11 @@ import Json.Decode.Pipeline exposing (..)
 import Utilities exposing (maybeString)
 import Dict
 import Agency exposing (..)
+import Html exposing (..)
+import Msg exposing (..)
+
+
+--- Type definitions
 
 
 type RouteType
@@ -52,7 +57,7 @@ routeTypeFromInt value =
 
 routeTypeDecoder : Decoder RouteType
 routeTypeDecoder =
-    map routeTypeFromInt int
+    Json.Decode.map routeTypeFromInt int
 
 
 type alias Route =
@@ -73,6 +78,10 @@ type alias RouteDict =
     Dict.Dict String Route
 
 
+
+--- Processing functions
+
+
 routeDecoder : Decoder Route
 routeDecoder =
     decode Route
@@ -91,3 +100,39 @@ routeDecoder =
 populateAgency : AgencyDict -> Route -> Route
 populateAgency agencies route =
     { route | agency = Dict.get route.agencyId agencies }
+
+
+
+--- Rendering functions
+
+
+routeList : RouteDict -> Html Msg
+routeList routes =
+    ul [] (Dict.values (Dict.map routeItem routes))
+
+routeItem : String -> Route -> Html Msg
+routeItem id route =
+    let
+        routeName =
+            Maybe.withDefault "" route.shortName
+
+        routeDesc =
+            Maybe.withDefault "" route.description
+
+        agencyName =
+            case route.agency of
+                Nothing ->
+                    ""
+
+                Just agency ->
+                    agency.name
+    in
+        li []
+            [ strong []
+                [ text agencyName
+                , text " "
+                , text routeName
+                ]
+            , text ": "
+            , text routeDesc
+            ]

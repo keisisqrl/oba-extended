@@ -78,12 +78,32 @@ stopItem : String -> Stop -> Html Msg
 stopItem id stop =
     li [ onClick (ShowStop (Just id)) ] [ text stop.name ]
 
+
 showStop : Maybe Stop -> Html Msg
 showStop isStop =
     case isStop of
         Nothing ->
             div [] [ h2 [] [ text "ERROR" ] ]
+
         Just stop ->
-            div [] [ h2 [ onClick (ShowStop Nothing) ] [ text stop.name ]
-                   , text "not implemented"]
-            {- routeList -}
+            div []
+                [ h2 [ onClick (ShowStop Nothing) ] [ text stop.name ]
+                , maybeRouteList stop.routes
+                ]
+
+
+maybeRouteList : Dict.Dict String (Maybe Route) -> Html Msg
+maybeRouteList routes =
+    ul []
+        (routes
+            |> Dict.map
+                (\x y ->
+                    case y of
+                        Just route ->
+                            routeItem route.id route
+
+                        Nothing ->
+                            text ""
+                )
+            |> Dict.values
+        )
