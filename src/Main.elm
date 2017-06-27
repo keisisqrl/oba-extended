@@ -15,10 +15,10 @@ import Html
 import Task
 import Html.Events exposing (onClick)
 import Geolocation exposing (Location, defaultOptions)
-import Http
 import Dict
 import ObaRequest exposing (..)
 import Stop exposing (..)
+import Msg exposing (..)
 
 geoOptions : Geolocation.Options
 geoOptions =
@@ -39,12 +39,6 @@ init =
     ( initModel, Cmd.none )
 
 
-type Msg
-    = NewLocation (Result Geolocation.Error Location)
-    | GetLocation
-    | GotLocResponse (Result Http.Error String)
-    | ShowStop (Maybe String)
-    | Retry
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -97,24 +91,3 @@ view model =
             [ onClick GetLocation ]
             [ text "Update Location" ]
         ]
-
-stopList : StopDict -> Html Msg
-stopList stops =
-    ul [] (Dict.values (Dict.map stopItem stops))
-
-stopItem : String -> Stop -> Html Msg
-stopItem id stop =
-  li [ onClick (ShowStop (Just id)) ] [ text stop.name ]
-
-showStop : Maybe Stop -> Html Msg
-showStop stop =
-  let
-    stopName = case stop of
-      Just stop ->
-        stop.name
-      Nothing ->
-        "ERROR"
-
-  in
-    div [] [ h2 [] [ text stopName ]
-    ]

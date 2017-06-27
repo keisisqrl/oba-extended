@@ -5,6 +5,12 @@ import Route exposing (..)
 import Utilities exposing (maybeString)
 import Json.Decode exposing (..)
 import Json.Decode.Pipeline exposing (..)
+import Msg exposing (..)
+import Html exposing (..)
+import Html.Events exposing (onClick)
+
+
+--- Type definitions
 
 
 type alias Stop =
@@ -23,6 +29,10 @@ type alias Stop =
 
 type alias StopDict =
     Dict.Dict String Stop
+
+
+
+--- Processing functions
 
 
 stopDecoderWithRoutes : Dict.Dict String (Maybe Route) -> Decoder Stop
@@ -44,12 +54,36 @@ stopDecoder : Decoder Stop
 stopDecoder =
     stopDecoderWithRoutes Dict.empty
 
+
 populateRoutes : RouteDict -> Stop -> Stop
 populateRoutes routes stop =
     let
         routes_dict =
-            List.map (\n -> (n, Dict.get n routes)) stop.routeIds
-             |> Dict.fromList
-
+            List.map (\n -> ( n, Dict.get n routes )) stop.routeIds
+                |> Dict.fromList
     in
-        {stop | routes = routes_dict}
+        { stop | routes = routes_dict }
+
+
+
+--- Rendering
+
+
+stopList : StopDict -> Html Msg
+stopList stops =
+    ul [] (Dict.values (Dict.map stopItem stops))
+
+
+stopItem : String -> Stop -> Html Msg
+stopItem id stop =
+    li [ onClick (ShowStop (Just id)) ] [ text stop.name ]
+
+showStop : Maybe Stop -> Html Msg
+showStop isStop =
+    case isStop of
+        Nothing ->
+            div [] [ h2 [] [ text "ERROR" ] ]
+        Just stop ->
+            div [] [ h2 [ onClick (ShowStop Nothing) ] [ text stop.name ]
+                   , text "not implemented"]
+            {- routeList -}
